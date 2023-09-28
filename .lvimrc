@@ -1,0 +1,6 @@
+function! ContinuouslyTest()
+!term git ls-files | entr -r raco test --drdr --make --quiet-program --heartbeat -p mahjong
+endfunction
+
+
+command! ContinuouslyTest call ContinuouslyTest()
