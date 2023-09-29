@@ -33,8 +33,7 @@
 
 
   (define (mj-tile-honour? t)
-    (or (string=? (mj-tile-suit t) "W")
-	(string=? (mj-tile-suit t) "D")))
+    (set-member? (set "W" "D") (mj-tile-suit t)))
   (module+ test
     (check-false (mj-tile-honour? (mk-t "P1")))
     (check-false (mj-tile-honour? (mk-t "S1")))
@@ -49,8 +48,7 @@
 
 
   (define (mj-tile-terminal? t)
-    (or (string=? (mj-tile-rank t) "1")
-	(string=? (mj-tile-rank t) "9")))
+    (set-member? (set "1" "9") (mj-tile-rank t)))
   (module+ test
     (check-false (mj-tile-terminal? (mk-t "P2")))
     (check-false (mj-tile-terminal? (mk-t "S8")))
