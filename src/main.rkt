@@ -5,14 +5,14 @@
   (module+ test 
     (require rackunit)
     (define (mk-t val)
-      (make-mj-tile val)))
+      (mj-tile val)))
 
 
-  (define-struct mj-tile [value]
+  (struct mj-tile [value]
 		 #:transparent)
   (module+ test
-    (check-false (mj-tile=? (make-mj-tile "P1") (make-mj-tile "P2")))
-    (check-true (mj-tile=? (make-mj-tile "P1") (make-mj-tile "P1"))))
+    (check-false (mj-tile=? (mj-tile "P1") (mj-tile "P2")))
+    (check-true (mj-tile=? (mj-tile "P1") (mj-tile "P1"))))
 
 
   (define (mj-tile-suit t)
@@ -84,7 +84,7 @@
     (check-true (mj-tile-suit=? (mk-t "P1") (mk-t "P2"))))
 
 
-  (define-struct mj-hand [concealed melds])
+  (struct mj-hand [concealed melds])
 
 
   (define (mj-hand-tiles hand)
@@ -96,7 +96,7 @@
     (string-join (map mj-tile->string htiles) ","))
   (module+ test
     (define (mk-h tiles)
-      (make-mj-hand tiles empty))
+      (mj-hand tiles empty))
     (check-equal? "P1,P2" (mj-hand->string (mk-h (list (mk-t "P1") (mk-t "P2"))))))
 
 
@@ -114,10 +114,10 @@
 	   (number? (string->number (substring (mj-tile-value t2) 1))))
 	 (string<? (mj-tile-value t1) (mj-tile-value t2))))
   (module+ test
-    (check-false (mj-tile<? (make-mj-tile "P2") (make-mj-tile "P1")))
-    (check-false (mj-tile<? (make-mj-tile "GD") (make-mj-tile "P1")))
-    (check-false (mj-tile<? (make-mj-tile "P1") (make-mj-tile "GD")))
-    (check-true (mj-tile<? (make-mj-tile "P1") (make-mj-tile "P2"))))
+    (check-false (mj-tile<? (mj-tile "P2") (mj-tile "P1")))
+    (check-false (mj-tile<? (mj-tile "GD") (mj-tile "P1")))
+    (check-false (mj-tile<? (mj-tile "P1") (mj-tile "GD")))
+    (check-true (mj-tile<? (mj-tile "P1") (mj-tile "P2"))))
 
 
   (define (mj-sequence? tiles)
@@ -238,11 +238,11 @@
   (check-false (yaku-tanyao? (h-parse "DG,DG,DG,S5,S6,S7,M6,M6,M6,M5,M5,M5,S8,S8"))))
 
 
-  (define-struct yaku [name hans]
+  (struct yaku [name hans]
 		 #:transparent)
 
 
-  (define ALL_SIMPLES (make-yaku "All simples" 1))
-  (define THREE_COLORED_STRAIGHT (make-yaku "Three colored straight" 2))
+  (define ALL_SIMPLES (yaku "All simples" 1))
+  (define THREE_COLORED_STRAIGHT (yaku "Three colored straight" 2))
 
   )
