@@ -1,8 +1,10 @@
-#lang racket
+#lang debug racket
 
 
 (module+ test
-  (require rackunit))
+  (require rackunit)
+  (require racket/trace))
+
 
 (define P 'Pin)
 (define S 'Sou)
@@ -18,18 +20,25 @@
 
 (struct mj-honour [face] #:prefab)
 (struct mj-ranked [suit rank] #:prefab)
+(define (mj-ranked->string t)
+  (define sym-str 
+    (match (symbol->string (mj-ranked-suit t))
+      ["Pin" "P"]
+      ["Sou" "S"]
+      ["Manzu" "M"]))
+  (string-append sym-str (number->string (mj-ranked-rank t))))
 
-(define (mj-tile tile) empty)
-(define (mj-tile? tile) #f)
-(define (mj-tile-value tile) '())
-(define (mj-tile-suit tile) '())
-
+(module+ test
+  (check-equal? "P1" (mj-ranked->string (mj-ranked P 1)))
+  (check-equal? "S9" (mj-ranked->string (mj-ranked S 9)))
+  (check-equal? "M5" (mj-ranked->string (mj-ranked M 5))))
 
 (module+ test
   (check-false (equal? (mj-ranked P 1) (mj-ranked P 2)))
   (check-false (equal? (mj-ranked P 1) (mj-ranked P 2)))
   (check-false (equal? (mj-ranked P 1) (mj-honour NW)))
-  (check-true (equal? (mj-ranked P 1) (mj-ranked P 1))))
+  (check-true (equal? (mj-ranked P 1) (mj-ranked P 1)))
+  (check-true (equal? (mj-honour NW) (mj-honour NW))))
 
 
 (define (tile . params)
@@ -55,70 +64,39 @@
 
 
 
-(define (mj-tile-rank t)
-  (substring (mj-tile-value t) 1 2))
-
-
-(define (mj-tile->string t)
-  (mj-tile-value t))
-
-
-(module+ test 
-  (define (mk-t val) (tile val)))
-
-
-(module+ test 
-  (check-equal? "P1" (mj-tile->string (mk-t "P1"))))
-
-
-(define (mj-tile-honour? t)
-  (set-member? (set "W" "D") (mj-tile-suit t)))
-(module+ test
-  (check-false (mj-tile-honour? (mk-t "P1")))
-  (check-false (mj-tile-honour? (mk-t "S1")))
-  (check-false (mj-tile-honour? (mk-t "M1")))
-  (check-true (mj-tile-honour? (mk-t "WW")))
-  (check-true (mj-tile-honour? (mk-t "WS")))
-  (check-true (mj-tile-honour? (mk-t "WN")))
-  (check-true (mj-tile-honour? (mk-t "WE")))
-  (check-true (mj-tile-honour? (mk-t "DR")))
-  (check-true (mj-tile-honour? (mk-t "DW")))
-  (check-true (mj-tile-honour? (mk-t "DG"))))
-
-
 (define (mj-tile-terminal? t)
-  (set-member? (set "1" "9") (mj-tile-rank t)))
-(module+ test
-  (check-false (mj-tile-terminal? (mk-t "P2")))
-  (check-false (mj-tile-terminal? (mk-t "S8")))
-  (check-false (mj-tile-terminal? (mk-t "GD")))
-  (check-false (mj-tile-terminal? (mk-t "NW")))
-  (check-true (mj-tile-terminal? (mk-t "M1")))
-  (check-true (mj-tile-terminal? (mk-t "M9")))
-  (check-true (mj-tile-terminal? (mk-t "S1")))
-  (check-true (mj-tile-terminal? (mk-t "S9")))
-  (check-true (mj-tile-terminal? (mk-t "P1")))
-  (check-true (mj-tile-terminal? (mk-t "P9"))))
+  (and (mj-ranked? t)
+       (or (= 1 (mj-ranked-rank t)) (= 9 (mj-ranked-rank t)))))
 
-
-(define (mj-tile-suit=? t1 t2)
-  (and (mj-tile? t1)
-       (mj-tile? t2)
-       (string=? (mj-tile-suit t1) (mj-tile-suit t2))
-       (not (or (mj-tile-honour? t1) (mj-tile-honour? t2)))))
 (module+ test
-  (check-false (mj-tile-suit=? (mk-t "DG") (mk-t "DR"))) ; not suited tile
-  (check-false (mj-tile-suit=? (mk-t "DG") (mk-t "S1")))
-  (check-false (mj-tile-suit=? (mk-t "DG") (mk-t "WS")))
-  (check-false (mj-tile-suit=? (mk-t "M1") (mk-t "P2")))
-  (check-false (mj-tile-suit=? (mk-t "P1") (mk-t "M1")))
-  (check-false (mj-tile-suit=? (mk-t "S1") (mk-t "M1")))
-  (check-false (mj-tile-suit=? (mk-t "WN") (mk-t "DG")))
-  (check-false (mj-tile-suit=? (mk-t "WN") (mk-t "S1")))
-  (check-false (mj-tile-suit=? (mk-t "WN") (mk-t "WS")))
-  (check-true (mj-tile-suit=? (mk-t "M1") (mk-t "M3")))
-  (check-true (mj-tile-suit=? (mk-t "P1") (mk-t "P1")))
-  (check-true (mj-tile-suit=? (mk-t "P1") (mk-t "P2"))))
+  (check-false (mj-tile-terminal? (tile GD)))
+  (check-false (mj-tile-terminal? (tile NW)))
+  (check-false (mj-tile-terminal? (tile P 2)))
+  (check-false (mj-tile-terminal? (tile S 8)))
+  (check-true (mj-tile-terminal?  (tile M 1)))
+  (check-true (mj-tile-terminal?  (tile M 9)))
+  (check-true (mj-tile-terminal?  (tile P 1)))
+  (check-true (mj-tile-terminal?  (tile P 9)))
+  (check-true (mj-tile-terminal?  (tile S 1)))
+  (check-true (mj-tile-terminal?  (tile S 9))))
+
+(define (mj-ranked-suit=? t1 t2)
+  (and (and (mj-ranked? t1) (mj-ranked? t2))
+       (equal? (mj-ranked-suit t1) (mj-ranked-suit t2))))
+
+(module+ test
+  (check-false (mj-ranked-suit=? (tile GD) (tile RD))) ; not suited tile
+  (check-false (mj-ranked-suit=? (tile GD) (tile S 1)))
+  (check-false (mj-ranked-suit=? (tile GD) (tile SW)))
+  (check-false (mj-ranked-suit=? (tile M 1) (tile P 2)))
+  (check-false (mj-ranked-suit=? (tile P 1) (tile M 1)))
+  (check-false (mj-ranked-suit=? (tile S 1) (tile M 1)))
+  (check-false (mj-ranked-suit=? (tile NW) (tile GD)))
+  (check-false (mj-ranked-suit=? (tile NW) (tile S 1)))
+  (check-false (mj-ranked-suit=? (tile NW) (tile SW)))
+  (check-true (mj-ranked-suit=?  (tile M 1) (tile M 3)))
+  (check-true (mj-ranked-suit=?  (tile P 1) (tile P 1)))
+  (check-true (mj-ranked-suit=?  (tile P 1) (tile P 2))))
 
 
 (struct mj-hand [concealed melds])
@@ -128,90 +106,90 @@
   (append (mj-hand-concealed hand) (mj-hand-melds hand)))
 
 
-(define (mj-hand->string h)
-  (define htiles (mj-hand-tiles h))
-  (string-join (map mj-tile->string htiles) ","))
 (module+ test
   (define (mk-h tiles)
-    (mj-hand tiles empty))
-  (check-equal? "P1,P2" (mj-hand->string (mk-h (list (mk-t "P1") (mk-t "P2"))))))
-
-
-(define (mj-tile=? t1 t2)
-  (and (mj-tile? t1)
-       (mj-tile? t2)
-       (string=? (mj-tile-value t1) (mj-tile-value t2))))
+    (mj-hand tiles empty)))
 
 
 (define (mj-tile<? t1 t2)
-  (and (mj-tile? t1)
-       (mj-tile? t2)
-       (and 
-	 (number? (string->number (substring (mj-tile-value t1) 1)))
-	 (number? (string->number (substring (mj-tile-value t2) 1))))
-       (string<? (mj-tile-value t1) (mj-tile-value t2))))
+  (and (or (mj-ranked? t1) (mj-honour? t1))
+       (or (mj-ranked? t2) (mj-honour? t2))
+       (cond
+	 [(and (mj-ranked? t1) (mj-ranked? t2))
+	  (string<? (mj-ranked->string t1) (mj-ranked->string t2))]
+	 [(and (mj-honour? t1) (mj-honour? t2)) (symbol<? (mj-honour-face t1) (mj-honour-face t2))]
+	 [(and (mj-honour? t1) (mj-ranked? t2)) #f]
+	 [(and (mj-ranked? t1) (mj-honour? t2)) #t]
+	 [else (error "Illegal state")])))
 (module+ test
-  (check-false (mj-tile<? (mj-tile "P2") (mj-tile "P1")))
-  (check-false (mj-tile<? (mj-tile "GD") (mj-tile "P1")))
-  (check-false (mj-tile<? (mj-tile "P1") (mj-tile "GD")))
-  (check-true (mj-tile<? (mj-tile "P1") (mj-tile "P2"))))
-
-
-(define (mj-sequence? tiles)
-  (define sorted-tiles (sort tiles mj-tile<?))
-  (define suits (map mj-tile-suit tiles))
-  (and 
-    (= 3 (length tiles))
-    (not (mj-tile-honour? (first tiles)))
-    (not (mj-tile-honour? (second tiles)))
-    (not (mj-tile-honour? (third tiles)))
-    (mj-tile-suit=? (first tiles) (second tiles))
-    (mj-tile-suit=? (second tiles) (third tiles))
-    (mj-tile<? (first sorted-tiles) (second sorted-tiles))
-    (mj-tile<? (second sorted-tiles) (third sorted-tiles))))
+  (check-true  (mj-tile<? (tile P 1) (tile P 2)))
+  (check-false (mj-tile<? (tile P 2)  (tile P 1)))
+  (check-true  (mj-tile<? (tile P 1)  (tile GD)))
+  (check-false (mj-tile<? (tile GD)   (tile P 1))))
 (module+ test
-  (check-false (mj-sequence? empty))
-  (check-false (mj-sequence? (list (mk-t "P1") (mk-t "P2"))))
-  (check-false (mj-sequence? (list (mk-t "GD") (mk-t "P2"))))
-  (check-false (mj-sequence? (list (mk-t "P1") (mk-t "P2") (mk-t "P1"))))
-  (check-false (mj-sequence? (list (mk-t "P1") (mk-t "P2") (mk-t "P3") (mk-t "P4"))))
-  (check-false (mj-sequence? (list (mk-t "GD") (mk-t "M1") (mk-t "M2"))))
-  (check-false (mj-sequence? (list (mk-t "GD") (mk-t "M1") (mk-t "P3"))))
-  (check-false (mj-sequence? (list (mk-t "M1") (mk-t "M2") (mk-t "P1"))))
-  (check-true (mj-sequence? (list (mk-t "P1") (mk-t "P2") (mk-t "P3"))))
-  (check-true (mj-sequence? (list (mk-t "P1") (mk-t "P3") (mk-t "P2")))))
+  (check-equal? (sort (list (tile P 2) (tile S 1) (tile P 1) (tile P 3)) mj-tile<?)
+		(list (tile P 1) (tile P 2) (tile P 3) (tile S 1))))
 
-
-(define (mj-triplet? tiles)
-  (and
-    (= 3 (length tiles)) 
-    (mj-tile=? (first tiles) (second tiles))
-    (mj-tile=? (second tiles) (third tiles))))
-(module+ test
-  (check-false (mj-triplet? empty))
-  (check-false (mj-triplet? (list (mk-t "P1") (mk-t "P1"))))
-  (check-false (mj-triplet? (list (mk-t "P1") (mk-t "P1") (mk-t "P2"))))
-  (check-false (mj-triplet? (list (mk-t "M1") (mk-t "M2") (mk-t "P1"))))
-  (check-false (mj-triplet? (list (mk-t "P1") (mk-t "P1") (mk-t "P1") (mk-t "P1"))))
-  (check-true (mj-triplet? (list (mk-t "P1") (mk-t "P1") (mk-t "P1")))))
-
-
-(define (mj-pair? tiles)
-  (cond
-    [(not (= 2 (length tiles))) #f]
-    [(mj-tile=? (first tiles) (second tiles)) #t]
-    [else #f]))
+(define (mj-pair? . tiles)
+  (define ftiles (flatten tiles))
+  (and (= 2 (length ftiles))
+       (equal? (first ftiles) (second ftiles))))
 (module+ test
   (check-false (mj-pair? empty))
-  (check-false (mj-pair? (list (mk-t "P1"))))
-  (check-false (mj-pair? (list (mk-t "P1")(mk-t "P2"))))
-  (check-false (mj-pair? (list (mk-t "M1")(mk-t "M2"))))
-  (check-false (mj-pair? (list (mk-t "GD")(mk-t "RD"))))
-  (check-false (mj-pair? (list (mk-t "M1")(mk-t "RD"))))
-  (check-true (mj-pair? (list (mk-t "P1")(mk-t "P1")))))
+  (check-false (mj-pair? (tile P 1)))
+  (check-false (mj-pair? (tile P 1)(tile P 2)))
+  (check-false (mj-pair? (tile M 1)(tile M 2)))
+  (check-false (mj-pair? (tile GD)(tile RD)))
+  (check-false (mj-pair? (tile M 1)(tile RD)))
+  (check-true (mj-pair?  (list (tile P 1)(tile P 1))))
+  (check-true (mj-pair?  (tile P 1)(tile P 1))))
 
 
-(define (block-it unordered-tiles)
+(define (mj-triplet? . tiles)
+  (define ftiles (flatten tiles))
+  (and (= 3 (length ftiles))
+       (and (equal? (first ftiles) (second ftiles))
+	    (equal? (first ftiles) (third ftiles)))))
+(module+ test
+  (check-false (mj-triplet? empty))
+  (check-false (mj-triplet? (tile P 1) (tile P 1)))
+  (check-false (mj-triplet? (tile P 1) (tile P 1) (tile P 2)))
+  (check-false (mj-triplet? (tile M 1) (tile M 2) (tile P 1)))
+  (check-false (mj-triplet? (tile P 1) (tile P 1) (tile P 1) (tile P 1)))
+  (check-true  (mj-triplet? (tile P 1) (tile P 1) (tile P 1)))
+  (check-true  (mj-triplet? (tile WW) (tile WW) (tile WW)))
+  (check-true  (mj-triplet? (list (tile WW) (tile WW) (tile WW)))))
+
+
+(define (mj-sequence? . tiles)
+  (define ftiles (flatten tiles))
+  (define sorted-tiles (sort ftiles mj-tile<?))
+  (and 
+    (= 3 (length ftiles))
+    (and (mj-ranked? (first ftiles)) 
+	 (mj-ranked? (second ftiles)) 
+	 (mj-ranked? (third ftiles)))
+    (mj-ranked-suit=? (first ftiles) (second ftiles))
+    (mj-ranked-suit=? (second ftiles) (third ftiles))
+    (not (equal? (mj-ranked-rank (first ftiles)) (mj-ranked-rank (second ftiles))))
+    (not (equal? (mj-ranked-rank (first ftiles)) (mj-ranked-rank (third ftiles))))
+    (= 1 (- (mj-ranked-rank (second sorted-tiles)) (mj-ranked-rank (first sorted-tiles))))  ; is a sequence of step 1
+    (= 2 (- (mj-ranked-rank (third sorted-tiles)) (mj-ranked-rank (first sorted-tiles))))))
+(module+ test
+  (check-true (mj-sequence?  (tile P 1) (tile P 2) (tile P 3)))
+  (check-true (mj-sequence?  (tile P 1) (tile P 3) (tile P 2)))
+  (check-true (mj-sequence?  (list (tile P 1) (tile P 3) (tile P 2))))
+  (check-false (mj-sequence? empty))
+  (check-false (mj-sequence? (tile P 1) (tile P 2)))
+  (check-false (mj-sequence? (tile GD) (tile P 2)))
+  (check-false (mj-sequence? (tile P 1) (tile P 2) (tile P 1)))
+  (check-false (mj-sequence? (tile P 1) (tile P 2) (tile P 3) (tile P 4)))
+  (check-false (mj-sequence? (tile GD) (tile M 1) (tile M 2)))
+  (check-false (mj-sequence? (tile GD) (tile M 1) (tile P 3)))
+  (check-false (mj-sequence? (tile M 1) (tile M 2) (tile P 1))))
+
+
+(define (mj-hand->blocks unordered-tiles)
   (define tiles (sort unordered-tiles mj-tile<?))
   (define nb (min 3 (length tiles)))
   (define taken (take tiles nb))
@@ -219,21 +197,29 @@
     [(empty? tiles) (append empty)]
     [(= 1 (length taken)) (cons taken empty)]
     [(= 2 (length taken)) (cond 
-			    [(mj-pair? taken) (cons taken (block-it (drop tiles 2)))]
-			    [else (cons (take tiles 1) (block-it (drop tiles 1)))])]
+			    [(mj-pair? taken) (cons taken (mj-hand->blocks (drop tiles 2)))]
+			    [else (cons (take tiles 1) (mj-hand->blocks (drop tiles 1)))])]
     [(= (length taken) 3) (cond
-			    [(mj-sequence? taken) (cons taken (block-it (drop tiles 3)))]
-			    [(mj-triplet? taken) (cons taken (block-it (drop tiles 3)))]
-			    [(mj-pair? (take taken 2)) (cons (take taken 2) (block-it (drop tiles 2)))]
-			    [else (cons (take tiles 1) (block-it (drop tiles 1)))])]))
+			    [(mj-sequence? taken) (cons taken (mj-hand->blocks (drop tiles 3)))]
+			    [(mj-triplet? taken) (cons taken (mj-hand->blocks (drop tiles 3)))]
+			    [(mj-pair? (take taken 2)) (cons (take taken 2) (mj-hand->blocks (drop tiles 2)))]
+			    [else (cons (take tiles 1) (mj-hand->blocks (drop tiles 1)))])]))
 (module+ test
+  (define ns (variable-reference->namespace (#%variable-reference)))
   (define (h-parse str)
-    (map mk-t (string-split str ",")))
+    (define split-tiles (string-split str ","))
+    (define (ranked? str) (number? (string->number (substring str 1 2))))
+    (define (str->tile str) (eval (string->symbol str) ns))
+    (define (convert str)
+      (cond
+	[(ranked? str) (tile (str->tile (substring str 0 1)) (string->number (substring str 1 2)))]
+	[else (tile (str->tile str))]))
+    (map convert split-tiles))
 
   ;mj-hand-to-blocks
   ; blocked ready hand
   (define readyhand-1 (h-parse "P1,S3,M8,P2,S2,M9,P3,S1,M7,WW,WW,WW,RD,RD"))
-  (define readyhand-1-blocked (block-it readyhand-1))
+  (define readyhand-1-blocked (mj-hand->blocks readyhand-1))
   (check-match 
     readyhand-1-blocked
     (list-no-order (list _ _ _)(list _ _ _)(list _ _ _)(list _ _ _)(list _ _)))
@@ -243,11 +229,10 @@
 
   ; blocked tenpai hand
   (define tenpai-hand-1 (h-parse "P1,P1,P1,P2,P2,P2,S1,S2,S3,M1,M2,GD,RD"))
-  (define tenpai-hand-1-blocked (block-it tenpai-hand-1))
+  (define tenpai-hand-1-blocked (mj-hand->blocks tenpai-hand-1))
   (check-match 
     tenpai-hand-1-blocked
-    (list-no-order (list _ _ _)(list _ _ _)(list _ _ _)(list _)(list _)(list _)(list
-										 _))))
+    (list-no-order (list _ _ _)(list _ _ _)(list _ _ _)(list _)(list _)(list _)(list _))))
 
 
 (define (mj-4-blocks-1-pair? blocked-tiles)
@@ -257,7 +242,7 @@
 
 
 (define (mj-ready-hand? tiles)
-  (mj-4-blocks-1-pair? (block-it tiles)))
+  (mj-4-blocks-1-pair? (mj-hand->blocks tiles)))
 
 
 (define (mj-ready-hand?* blocked-tiles)
@@ -266,13 +251,13 @@
 
 (define (yaku-tanyao? tiles)
   (and 
-    (not (ormap mj-tile-honour? tiles))
+    (not (ormap mj-honour? tiles))
     (not (ormap mj-tile-terminal? tiles))
     (mj-ready-hand? tiles)))
 (module+ test
   (check-true (yaku-tanyao? (h-parse "P2,P3,P4,S5,S6,S7,M6,M6,M6,M5,M5,M5,S8,S8")))
   (check-false (yaku-tanyao? (h-parse "P1,P2,P3,S5,S6,S7,M6,M6,M6,M5,M5,M5,S8,S8")))
-  (check-false (yaku-tanyao? (h-parse "DG,DG,DG,S5,S6,S7,M6,M6,M6,M5,M5,M5,S8,S8"))))
+  (check-false (yaku-tanyao? (h-parse "GD,GD,GD,S5,S6,S7,M6,M6,M6,M5,M5,M5,S8,S8"))))
 
 
 (struct yaku [name hans]
@@ -281,4 +266,7 @@
 
 (define ALL_SIMPLES (yaku "All simples" 1))
 (define THREE_COLORED_STRAIGHT (yaku "Three colored straight" 2))
+
+(module mahjong racket
+  (provide all-defined-out))
 
