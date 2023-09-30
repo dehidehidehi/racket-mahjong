@@ -1,0 +1,8 @@
+doc
+.idea
+*.iml
+**/compiled
+.lvimrc
+*.vim
+*.swp
+*.un~
