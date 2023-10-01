@@ -315,7 +315,7 @@
   (check-false (chiitoitsu? (h-parse "P1,P1,S1,S1,M1,M1,P2,P2,S2,S2,M2,M2,GD,RD"))))
 
 
-(define (yaku-tanyao? tiles)
+(define (tanyao? tiles)
   (and 
     (not (ormap mj-honour? tiles))
     (not (ormap mj-tile-terminal? tiles))
@@ -323,9 +323,9 @@
 
 
 (module+ test
-  (check-true  (yaku-tanyao? (h-parse "P2,P3,P4,S5,S6,S7,M6,M6,M6,M5,M5,M5,S8,S8")))
-  (check-false (yaku-tanyao? (h-parse "P1,P2,P3,S5,S6,S7,M6,M6,M6,M5,M5,M5,S8,S8")))
-  (check-false (yaku-tanyao? (h-parse "GD,GD,GD,S5,S6,S7,M6,M6,M6,M5,M5,M5,S8,S8"))))
+  (check-true  (tanyao? (h-parse "P2,P3,P4,S5,S6,S7,M6,M6,M6,M5,M5,M5,S8,S8")))
+  (check-false (tanyao? (h-parse "P1,P2,P3,S5,S6,S7,M6,M6,M6,M5,M5,M5,S8,S8")))
+  (check-false (tanyao? (h-parse "GD,GD,GD,S5,S6,S7,M6,M6,M6,M5,M5,M5,S8,S8"))))
 
 
 (struct yaku [name hans]
