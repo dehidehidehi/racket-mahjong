@@ -1,4 +1,5 @@
 #lang debug racket
+;#lang racket
 
 
 (module+ test
@@ -68,6 +69,7 @@
   (and (mj-ranked? t)
        (or (= 1 (mj-ranked-rank t)) (= 9 (mj-ranked-rank t)))))
 
+
 (module+ test
   (check-false (mj-tile-terminal? (tile GD)))
   (check-false (mj-tile-terminal? (tile NW)))
@@ -80,9 +82,11 @@
   (check-true (mj-tile-terminal?  (tile S 1)))
   (check-true (mj-tile-terminal?  (tile S 9))))
 
+
 (define (mj-ranked-suit=? t1 t2)
   (and (and (mj-ranked? t1) (mj-ranked? t2))
        (equal? (mj-ranked-suit t1) (mj-ranked-suit t2))))
+
 
 (module+ test
   (check-false (mj-ranked-suit=? (tile GD) (tile RD))) ; not suited tile
@@ -97,6 +101,24 @@
   (check-true (mj-ranked-suit=?  (tile M 1) (tile M 3)))
   (check-true (mj-ranked-suit=?  (tile P 1) (tile P 1)))
   (check-true (mj-ranked-suit=?  (tile P 1) (tile P 2))))
+
+
+(define (mj-ranked-suit=?* . p-tiles)
+  (define tiles (flatten p-tiles))
+  (cond
+    [(empty? tiles) #t]
+    [(= 2 (length tiles)) (mj-ranked-suit=? (first tiles) (second tiles))]
+    [else (eq? #t (andmap (lambda (t) (mj-ranked-suit=? t (first tiles))) (rest tiles)))]))
+
+
+(module+ test
+  (check-true (mj-ranked-suit=?* empty))
+  (check-true (mj-ranked-suit=?* (tile P 1) (tile P 2)))
+  (check-true (mj-ranked-suit=?* (tile M 1) (tile M 1) (tile M 1)))
+  (check-false (mj-ranked-suit=?* (tile P 1) (tile S 1)))
+  (check-false (mj-ranked-suit=?* (tile P 1) (tile S 1) (tile S 2)))
+  (check-false (mj-ranked-suit=?* (tile GD) (tile GD)))
+  (check-false (mj-ranked-suit=?* (tile NW) (tile SW))))
 
 
 (struct mj-hand [concealed melds])
@@ -121,19 +143,26 @@
 	 [(and (mj-honour? t1) (mj-ranked? t2)) #f]
 	 [(and (mj-ranked? t1) (mj-honour? t2)) #t]
 	 [else (error "Illegal state")])))
+
+
 (module+ test
   (check-true  (mj-tile<? (tile P 1) (tile P 2)))
   (check-false (mj-tile<? (tile P 2)  (tile P 1)))
   (check-true  (mj-tile<? (tile P 1)  (tile GD)))
   (check-false (mj-tile<? (tile GD)   (tile P 1))))
+
+
 (module+ test
   (check-equal? (sort (list (tile P 2) (tile S 1) (tile P 1) (tile P 3)) mj-tile<?)
 		(list (tile P 1) (tile P 2) (tile P 3) (tile S 1))))
+
 
 (define (mj-pair? . tiles)
   (define ftiles (flatten tiles))
   (and (= 2 (length ftiles))
        (equal? (first ftiles) (second ftiles))))
+
+
 (module+ test
   (check-false (mj-pair? empty))
   (check-false (mj-pair? (tile P 1)))
@@ -150,6 +179,8 @@
   (and (= 3 (length ftiles))
        (and (equal? (first ftiles) (second ftiles))
 	    (equal? (first ftiles) (third ftiles)))))
+
+
 (module+ test
   (check-false (mj-triplet? empty))
   (check-false (mj-triplet? (tile P 1) (tile P 1)))
@@ -161,20 +192,45 @@
   (check-true  (mj-triplet? (list (tile WW) (tile WW) (tile WW)))))
 
 
+(define (arithmetic-sequence? numbers [step-size 1])
+  (define (compare-last-2-numbers) 
+    (= step-size 
+       (- (last numbers) 
+	  (list-ref numbers (- (length numbers) 2)))))
+  (cond
+    [(empty? numbers) #f]
+    [(= 1 (length numbers)) #t]
+    [(= 2 (length numbers)) (compare-last-2-numbers)]
+    [else (and (compare-last-2-numbers) (arithmetic-sequence? (drop-right numbers 1) step-size))]))
+
+
+(module+ test
+  (check-false (arithmetic-sequence? empty))
+  (check-true (arithmetic-sequence? (list 1)))
+  (check-true (arithmetic-sequence? (list 1 2)))
+  (check-false (arithmetic-sequence? (list 1 2 4)))
+  (check-false (arithmetic-sequence? (list 1 3 4)))
+  (check-true (arithmetic-sequence? (list 2 3 4)))
+  (check-true (arithmetic-sequence? (list 2 4 6) 2))
+  (check-false (arithmetic-sequence? (list 3 2 1)))
+  (check-false (arithmetic-sequence? (list 6 4 2) 2)))
+
+
+(define (mj-ranked-sequence? p-tiles)
+  (define tiles (flatten p-tiles))
+  (arithmetic-sequence? (map mj-ranked-rank tiles)))
+
+
 (define (mj-sequence? . tiles)
   (define ftiles (flatten tiles))
   (define sorted-tiles (sort ftiles mj-tile<?))
   (and 
     (= 3 (length ftiles))
-    (and (mj-ranked? (first ftiles)) 
-	 (mj-ranked? (second ftiles)) 
-	 (mj-ranked? (third ftiles)))
-    (mj-ranked-suit=? (first ftiles) (second ftiles))
-    (mj-ranked-suit=? (second ftiles) (third ftiles))
-    (not (equal? (mj-ranked-rank (first ftiles)) (mj-ranked-rank (second ftiles))))
-    (not (equal? (mj-ranked-rank (first ftiles)) (mj-ranked-rank (third ftiles))))
-    (= 1 (- (mj-ranked-rank (second sorted-tiles)) (mj-ranked-rank (first sorted-tiles))))  ; is a sequence of step 1
-    (= 2 (- (mj-ranked-rank (third sorted-tiles)) (mj-ranked-rank (first sorted-tiles))))))
+    (andmap mj-ranked? ftiles)
+    (mj-ranked-suit=?* ftiles)
+    (mj-ranked-sequence? sorted-tiles)))
+
+
 (module+ test
   (check-true (mj-sequence?  (tile P 1) (tile P 2) (tile P 3)))
   (check-true (mj-sequence?  (tile P 1) (tile P 3) (tile P 2)))
@@ -204,6 +260,8 @@
 			    [(mj-triplet? taken) (cons taken (mj-hand->blocks (drop tiles 3)))]
 			    [(mj-pair? (take taken 2)) (cons (take taken 2) (mj-hand->blocks (drop tiles 2)))]
 			    [else (cons (take tiles 1) (mj-hand->blocks (drop tiles 1)))])]))
+
+
 (module+ test
   (define ns (variable-reference->namespace (#%variable-reference)))
   (define (h-parse str)
@@ -254,6 +312,8 @@
     (not (ormap mj-honour? tiles))
     (not (ormap mj-tile-terminal? tiles))
     (mj-ready-hand? tiles)))
+
+
 (module+ test
   (check-true (yaku-tanyao? (h-parse "P2,P3,P4,S5,S6,S7,M6,M6,M6,M5,M5,M5,S8,S8")))
   (check-false (yaku-tanyao? (h-parse "P1,P2,P3,S5,S6,S7,M6,M6,M6,M5,M5,M5,S8,S8")))
@@ -265,7 +325,10 @@
 
 
 (define ALL_SIMPLES (yaku "All simples" 1))
+
+
 (define THREE_COLORED_STRAIGHT (yaku "Three colored straight" 2))
+
 
 (module mahjong racket
   (provide all-defined-out))
