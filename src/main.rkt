@@ -1,5 +1,5 @@
-#lang debug racket
 ;#lang racket
+#lang debug racket
 
 
 (module+ test
@@ -300,11 +300,19 @@
 
 
 (define (mj-ready-hand? tiles)
-  (mj-4-blocks-1-pair? (mj-hand->blocks tiles)))
+  (or (chiitoitsu? tiles)
+      (mj-4-blocks-1-pair? (mj-hand->blocks tiles))))
 
 
-(define (mj-ready-hand?* blocked-tiles)
-  (mj-4-blocks-1-pair? blocked-tiles))
+(define (chiitoitsu? tiles)
+  (match (mj-hand->blocks tiles)
+    [(list-no-order (list _ _) (list _ _)(list _ _)(list _ _)(list _ _)(list _ _)(list _ _)) #t]
+    [_ #f]))
+
+
+(module+ test
+  (check-true (chiitoitsu? (h-parse "P1,P1,S1,S1,M1,M1,P2,P2,S2,S2,M2,M2,GD,GD")))
+  (check-false (chiitoitsu? (h-parse "P1,P1,S1,S1,M1,M1,P2,P2,S2,S2,M2,M2,GD,RD"))))
 
 
 (define (yaku-tanyao? tiles)
@@ -315,7 +323,7 @@
 
 
 (module+ test
-  (check-true (yaku-tanyao? (h-parse "P2,P3,P4,S5,S6,S7,M6,M6,M6,M5,M5,M5,S8,S8")))
+  (check-true  (yaku-tanyao? (h-parse "P2,P3,P4,S5,S6,S7,M6,M6,M6,M5,M5,M5,S8,S8")))
   (check-false (yaku-tanyao? (h-parse "P1,P2,P3,S5,S6,S7,M6,M6,M6,M5,M5,M5,S8,S8")))
   (check-false (yaku-tanyao? (h-parse "GD,GD,GD,S5,S6,S7,M6,M6,M6,M5,M5,M5,S8,S8"))))
 
