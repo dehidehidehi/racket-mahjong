@@ -1,5 +1,6 @@
-;#lang racket
-#lang debug racket
+#lang racket
+(provide tile)
+(provide all-defined-out)
 
 
 (module+ test
@@ -337,7 +338,4 @@
 
 (define THREE_COLORED_STRAIGHT (yaku "Three colored straight" 2))
 
-
-(module mahjong racket
-  (provide all-defined-out))
 

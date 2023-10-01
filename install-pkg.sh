@@ -1,1 +1,2 @@
-raco pkg install -n mahjong --no-docs --link src
+pkg="mpsz"
+raco pkg install -n $pkg --no-docs --link src
