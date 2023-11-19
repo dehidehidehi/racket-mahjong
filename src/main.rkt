@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 #lang debug racket
 
 
@@ -44,10 +45,36 @@
 (define (tile . params)
   (if (and (symbol? (first params))
 	   (or (< (length params) 2) (number? (second params))))
+=======
+(module mahjong typed/racket
+  (provide (all-defined-out))
+
+  (struct Tile ([value : String] [rank : Integer]))
+  (define (tile->string [ tile : Tile ])
+    (format "(Tile=[value=~a rank=~a]" (Tile-value tile) (Tile-rank tile)))
+  (define (tile->string-short [t : Tile]) (Tile-value t))
+  (define (tile<=? [t1 : Tile] [t2 : Tile]) (string<=? (Tile-value t1) (Tile-value t2)))
+  (define (tile-paired? [t1 : Tile] [t2 : Tile]) (eq? (Tile-value t1) (Tile-value t2)))
+
+  (struct Hand ([tiles : (Listof Tile)]))
+
+
+
+  (: hand->string (-> Hand String))
+  (define (hand->string hand)
+    (format "Hand [tiles=~a]" (string-join (map tile->string-short (Hand-tiles hand)) ",")))
+
+  (: count-blocks (-> (Listof Tile) (Values Number (Listof Tile))))
+  (define (count-blocks tiles)
+    (values 1 (list (Tile "1" 2) (Tile "3" 4))))
+
+  (: pair-tiles (-> (Listof Tile) (Listof Tile)))
+  (define (pair-tiles ts)
+    ;(println (string-join (map tile->string-short ts) ","))
     (cond
       [(set-member? (set P S M) (first params)) (mj-ranked (first params) (second params))]
       [else (mj-honour (first params))])
-    (error "Invalid tile symbols")))
+    (error "Invalid tile symbols"))
 
 
 (module+ test
