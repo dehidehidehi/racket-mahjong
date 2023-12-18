@@ -9,6 +9,11 @@
 ; htdd enum template 
 ; htdd composite data template
 
+;; Vim stuff
+;; LSP display error at end of line instead
+;; improve my autocomplete
+;; look again at primagen config
+
 
 (module+ test
   (require rackunit))
